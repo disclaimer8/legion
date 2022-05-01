@@ -5,7 +5,8 @@ echo "Strap yourself in, we're starting Legion..."
 # Set everything we might need as executable
 chmod a+x -R ./deps/*
 chmod a+x -R ./scripts/*
-
+sudo apt install libpq-dev
+./opt/buildhome/python3.7/bin/python3.7 -m pip install --upgrade pip
 # Determine and set the Python and Pip paths
 source ./deps/detectPython.sh
 
