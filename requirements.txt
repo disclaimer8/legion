@@ -7,7 +7,7 @@ psycopg2
 SQLAlchemy==1.4.39
 aiomonitor>=0.3.1
 APScheduler>=3.5.3
-PyQt5==5.15.7
+PyQt5==5.15.8
 sanic>=0.8.3
 sanic_swagger
 requests>=2.20.1
