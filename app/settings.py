@@ -185,6 +185,18 @@ class AppSettings():
         "-u [WEB_URL] -o [OUTPUT].jsonl) || "
         "echo httpx not found"
     )
+    VIGOLIUM_DAST_COMMAND = (
+        "(command -v vigolium >/dev/null 2>&1 && "
+        "vigolium scan --stateless -t [WEB_URL] --only dynamic-assessment --intensity quick "
+        "--format jsonl -o [OUTPUT].jsonl) || "
+        "echo vigolium not found"
+    )
+    VIGOLIUM_PASSIVE_COMMAND = (
+        "(command -v vigolium >/dev/null 2>&1 && "
+        "vigolium scan --stateless -t [WEB_URL] --only dynamic-assessment --passive-only --intensity quick "
+        "--format jsonl -o [OUTPUT].jsonl) || "
+        "echo vigolium not found"
+    )
     SUBFINDER_COMMAND = (
         "(command -v subfinder >/dev/null 2>&1 && "
         "subfinder -silent -recursive -duc -max-time 5 -oJ -d [IP] -o [OUTPUT].jsonl) || "
@@ -296,6 +308,8 @@ class AppSettings():
     )
     BASELINE_WEB_PORT_ACTIONS = {
         "httpx": ("Run httpx", HTTPX_COMMAND, WEB_SERVICE_SCOPE),
+        "vigolium-dast": ("Run vigolium DAST scan", VIGOLIUM_DAST_COMMAND, WEB_SERVICE_SCOPE),
+        "vigolium-passive": ("Run vigolium passive scan", VIGOLIUM_PASSIVE_COMMAND, WEB_SERVICE_SCOPE),
         "whatweb": ("Run whatweb", WHATWEB_COMMAND, WEB_SERVICE_SCOPE),
         "whatweb-http": ("Run whatweb (http)", WHATWEB_COMMAND, "http,soap,http-proxy,http-alt"),
         "whatweb-https": ("Run whatweb (https)", WHATWEB_COMMAND, "https,ssl,https-alt"),
@@ -850,6 +864,8 @@ class AppSettings():
                     ("dirsearch", self.WEB_SERVICE_SCOPE),
                     ("ffuf", self.WEB_SERVICE_SCOPE),
                     ("katana", self.WEB_SERVICE_SCOPE),
+                    ("vigolium-dast", self.WEB_SERVICE_SCOPE),
+                    ("vigolium-passive", self.WEB_SERVICE_SCOPE),
                     ("enum4linux-ng", "netbios-ssn,microsoft-ds,smb"),
                     ("smbmap", "netbios-ssn,microsoft-ds,smb"),
                     ("rpcclient-enum", "netbios-ssn,microsoft-ds,smb"),

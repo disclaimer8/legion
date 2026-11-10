@@ -538,6 +538,16 @@ def _tool_specs() -> List[ToolSpec]:
             notes="ProjectDiscovery currently documents the v3 install path and template update flow.",
         ),
         ToolSpec(
+            "vigolium",
+            "Vigolium",
+            ("vigolium",),
+            "web",
+            "Dynamic web vulnerability assessment (DAST) and passive traffic analysis.",
+            kali_install="git clone https://github.com/vigolium/vigolium.git && cd vigolium && make build",
+            ubuntu_install="git clone https://github.com/vigolium/vigolium.git && cd vigolium && make build",
+            notes="Built from source (MIT); Legion resolves the Go bin build first via the tool execution PATH.",
+        ),
+        ToolSpec(
             "whatweb",
             "WhatWeb",
             ("whatweb",),

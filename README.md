@@ -225,6 +225,32 @@ Notes for macOS:
   `.venv/bin/python -m pip install -r requirements-dev.txt`).
   `./startLegion.sh` on macOS delegates to `startLegion-macos.sh`.
 
+#### Vigolium DAST sidecar (built from source)
+
+The `vigolium-dast` / `vigolium-passive` port actions run
+[Vigolium](https://github.com/vigolium/vigolium) (MIT) as a dynamic web
+vulnerability scanner next to nuclei/nikto/wpscan. Legion resolves tools
+through its execution `PATH`, which puts the Go bin directory first, so a
+from-source build installed to `~/go/bin` wins over any other `vigolium`
+on the machine. Findings from its JSONL output are imported into Host
+Detail like nuclei results.
+
+Reference build used during development (fork:
+<https://github.com/disclaimer8/vigolium>, branch `legion-build`):
+
+```shell
+git clone https://github.com/vigolium/vigolium.git
+cd vigolium
+make build VERSION_SUFFIX=-legion1   # installs to $(go env GOPATH)/bin
+vigolium version                      # v0.5.6-legion1, commit 1aa203d
+```
+
+Provenance of the verified build: upstream commit
+`1aa203d8407cb62d2ad17f0e1b99f9b049aa767c`, built 2026-11-10,
+`sha256(~/go/bin/vigolium)=958e4281690ba1c2fcb89eb0cc582001b5b836b1eb46fcb4c5bfd9c492c2e81a`.
+No vigolium binary is vendored in this repository; without it the actions
+report `vigolium not found` and everything else keeps working.
+
 ### Docker
 
 Two slim images are provided in addition to the Kali operator image at the

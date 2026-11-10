@@ -1577,6 +1577,36 @@ class ObservationParsersTest(unittest.TestCase):
         self.assertIn("Microsoft SQL Server", mssql_tech)
         self.assertIn("Microsoft SQL Server clustered deployment", mssql_findings)
 
+    def test_extract_tool_observations_parses_vigolium_jsonl_findings(self):
+        from app.scheduler.observation_parsers import extract_tool_observations
+
+        fixture_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "fixtures", "vigolium-findings.jsonl"
+        )
+        with open(fixture_path, encoding="utf-8") as handle:
+            output = handle.read()
+
+        parsed = extract_tool_observations(
+            "vigolium-dast",
+            output,
+            port="8899",
+            protocol="tcp",
+            service="http",
+        )
+
+        by_title = {str(item.get("title", "")): item for item in parsed["findings"]}
+        self.assertIn("XSS DOM Confirm (Browser)", by_title)
+        self.assertEqual("high", by_title["XSS DOM Confirm (Browser)"]["severity"])
+        self.assertIn("HTTP Response Header Injection", by_title)
+        # vigolium "suspect" severity maps to low, keeping the raw token visible.
+        header_injection = by_title["HTTP Response Header Injection"]
+        self.assertEqual("low", header_injection["severity"])
+        self.assertIn("vigolium severity: suspect", header_injection.get("evidence_items", []))
+        self.assertIn("Input Reflection Detect", by_title)
+        self.assertEqual("info", by_title["Input Reflection Detect"]["severity"])
+        urls = {str(item.get("url", "")) for item in parsed["urls"]}
+        self.assertIn("http://127.0.0.1:8899/search?q=hello123", urls)
+
 
 if __name__ == "__main__":
     unittest.main()

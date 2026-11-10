@@ -296,6 +296,7 @@ _SUPPORTED_ARTIFACT_PARSE_PREFIXES = (
     "httpx",
     "nikto",
     "nuclei",
+    "vigolium",
     "nmap-vuln",
     "http-vuln-",
     "sslscan",
@@ -1553,6 +1554,56 @@ def _parse_nuclei_output(tool_id: str, output_text: str, *, port: str = "", prot
         "findings": _dedupe_rows(findings, ("title", "cve", "evidence"), limit=64),
         "urls": _dedupe_rows(urls, ("url",), limit=64),
         "finding_quality_events": _dedupe_rows(quality_events, ("title", "cve", "action", "reason", "evidence"), limit=96),
+    }
+
+
+def _parse_vigolium_output(tool_id: str, output_text: str, *, port: str = "", protocol: str = "tcp", service: str = "") -> Dict[str, Any]:
+    findings: List[Dict[str, Any]] = []
+    urls: List[Dict[str, Any]] = []
+    for payload in _iter_json_payloads(str(output_text or "")):
+        rows: List[Dict[str, Any]] = []
+        if isinstance(payload, dict) and str(payload.get("type") or "") == "finding" and isinstance(payload.get("data"), dict):
+            rows.append(payload["data"])
+        elif isinstance(payload, dict) and isinstance(payload.get("items"), list):
+            rows.extend(item for item in payload["items"] if isinstance(item, dict))
+        elif isinstance(payload, dict) and payload.get("module_id"):
+            rows.append(payload)
+        elif isinstance(payload, list):
+            rows.extend(item for item in payload if isinstance(item, dict))
+        for row in rows:
+            module_id = str(row.get("module_id") or "").strip()
+            title = str(row.get("module_name") or module_id or "").strip()
+            if not title:
+                continue
+            raw_severity = str(row.get("severity") or "info").strip().lower()
+            severity = _severity_token("low" if raw_severity == "suspect" else raw_severity, "info")
+            description = str(row.get("description") or row.get("module_short") or "").strip()
+            evidence_text = description.split("\n\n", 1)[0].replace("\n", " ").strip() or title
+            cve_match = _CVE_RE.search(" ".join([module_id, str(row.get("tags") or ""), description]))
+            cve_id = cve_match.group(0).upper() if cve_match else ""
+            matched = row.get("matched_at") if isinstance(row.get("matched_at"), list) else []
+            matched_url = str((matched[0] if matched else "") or row.get("url") or "").strip()
+            evidence_items = row.get("extracted_results") if isinstance(row.get("extracted_results"), list) else []
+            items = [str(item or "") for item in evidence_items]
+            confidence = str(row.get("confidence") or "").strip()
+            if confidence:
+                items.append(f"confidence: {confidence}")
+            if raw_severity == "suspect":
+                items.append("vigolium severity: suspect")
+            _append_finding(
+                findings,
+                title,
+                severity=severity,
+                cve=cve_id,
+                evidence=evidence_text,
+                evidence_items=items,
+            )
+            _append_url(urls, matched_url, port=port, protocol=protocol, service=service, label=title)
+    return {
+        "technologies": [],
+        "findings": _dedupe_rows(findings, ("title", "cve", "evidence"), limit=64),
+        "urls": _dedupe_rows(urls, ("url",), limit=64),
+        "finding_quality_events": [],
     }
 
 
@@ -3561,6 +3612,8 @@ def extract_tool_observations(
                 protocol=str(protocol or "tcp"),
                 service=str(service or ""),
             )
+        elif normalized_tool.startswith("vigolium"):
+            current = _parse_vigolium_output(normalized_tool, source, port=str(port or ""), protocol=str(protocol or "tcp"), service=str(service or ""))
         elif "nuclei" in normalized_tool:
             current = _parse_nuclei_output(normalized_tool, source, port=str(port or ""), protocol=str(protocol or "tcp"), service=str(service or ""))
         elif normalized_tool == "nmap-vuln.nse" or normalized_tool.startswith("http-vuln-"):
